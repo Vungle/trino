@@ -526,7 +526,7 @@ jobs:
   build-pt:
     runs-on: ubuntu-latest
     outputs:
-      have_secrets: ${{ steps.check-secrets.outputs.have_secrets }}
+      have_azure_secrets: ${{ steps.check-secrets.outputs.have_azure_secrets }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -546,10 +546,10 @@ jobs:
           ]]; \
           then
             echo "Secrets to run product tests were configured in the repo"
-            echo "::set-output name=have_secrets::true"
+            echo "::set-output name=have_azure_secrets::true"
           else
             echo "Secrets to run product tests were not configured in the repo"
-            echo "::set-output name=have_secrets::false"
+            echo "::set-output name=have_azure_secrets::false"
           fi
         id: check-secrets
       - name: Maven Install
@@ -738,7 +738,7 @@ jobs:
   azure-pt:
     runs-on: ubuntu-latest
     needs: build-pt
-    if: needs.build-pt.outputs.have_secrets == 'true'
+    if: needs.build-pt.outputs.have_azure_secrets == 'true'
     strategy:
       fail-fast: false
       matrix:
