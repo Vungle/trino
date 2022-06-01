@@ -11,15 +11,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.trino.plugin.jdbc;
+package io.trino.plugin.redshift;
 
-import io.trino.spi.connector.ConnectorMetadata;
-import io.trino.spi.connector.ConnectorSession;
+import io.trino.plugin.jdbc.aggregation.BaseImplementAvgBigint;
 
-public interface JdbcMetadata
-        extends ConnectorMetadata
+public class ImplementAvgBigint
+        extends BaseImplementAvgBigint
 {
-    JdbcTableHandle getTableHandle(ConnectorSession session, PreparedQuery preparedQuery);
-
-    void rollback();
+    @Override
+    protected String getRewriteFormatExpression()
+    {
+        return "avg(CAST(%s AS double precision))";
+    }
 }
