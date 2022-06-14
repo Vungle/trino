@@ -81,8 +81,6 @@ import static io.trino.spi.security.AccessDeniedException.denyDropRole;
 import static io.trino.spi.security.AccessDeniedException.denyDropSchema;
 import static io.trino.spi.security.AccessDeniedException.denyDropTable;
 import static io.trino.spi.security.AccessDeniedException.denyDropView;
-import static io.trino.spi.security.AccessDeniedException.denyExecuteFunction;
-import static io.trino.spi.security.AccessDeniedException.denyGrantExecuteFunctionPrivilege;
 import static io.trino.spi.security.AccessDeniedException.denyGrantRoles;
 import static io.trino.spi.security.AccessDeniedException.denyGrantSchemaPrivilege;
 import static io.trino.spi.security.AccessDeniedException.denyGrantTablePrivilege;
@@ -118,7 +116,6 @@ import static io.trino.spi.security.AccessDeniedException.denyUpdateTableColumns
 import static io.trino.spi.security.AccessDeniedException.denyViewQuery;
 import static io.trino.spi.security.AccessDeniedException.denyWriteSystemInformationAccess;
 import static java.lang.String.format;
-import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -817,12 +814,8 @@ public class FileBasedSystemAccessControl
     public void checkCanGrantExecuteFunctionPrivilege(SystemSecurityContext context, FunctionKind functionKind, CatalogSchemaRoutineName functionName, TrinoPrincipal grantee, boolean grantOption)
     {
         switch (functionKind) {
-            case SCALAR, AGGREGATE, WINDOW:
+            case SCALAR, AGGREGATE, WINDOW, TABLE:
                 return;
-            case TABLE:
-                // TODO (https://github.com/trinodb/trino/issues/12833) implement
-                String granteeAsString = format("%s '%s'", grantee.getType().name().toLowerCase(ENGLISH), grantee.getName());
-                denyGrantExecuteFunctionPrivilege(functionName.toString(), context.getIdentity(), granteeAsString);
         }
         throw new UnsupportedOperationException("Unsupported function kind: " + functionKind);
     }
@@ -969,10 +962,8 @@ public class FileBasedSystemAccessControl
     public void checkCanExecuteFunction(SystemSecurityContext systemSecurityContext, FunctionKind functionKind, CatalogSchemaRoutineName functionName)
     {
         switch (functionKind) {
-            case SCALAR, AGGREGATE, WINDOW:
+            case SCALAR, AGGREGATE, WINDOW, TABLE:
                 return;
-            case TABLE:
-                denyExecuteFunction(functionName.toString());
         }
         throw new UnsupportedOperationException("Unsupported function kind: " + functionKind);
     }
