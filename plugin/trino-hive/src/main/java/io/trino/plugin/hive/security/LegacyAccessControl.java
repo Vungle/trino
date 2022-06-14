@@ -37,7 +37,6 @@ import static io.trino.spi.security.AccessDeniedException.denyCommentColumn;
 import static io.trino.spi.security.AccessDeniedException.denyCommentTable;
 import static io.trino.spi.security.AccessDeniedException.denyDropColumn;
 import static io.trino.spi.security.AccessDeniedException.denyDropTable;
-import static io.trino.spi.security.AccessDeniedException.denyExecuteFunction;
 import static io.trino.spi.security.AccessDeniedException.denyRenameColumn;
 import static io.trino.spi.security.AccessDeniedException.denyRenameTable;
 import static java.lang.String.format;
@@ -397,10 +396,8 @@ public class LegacyAccessControl
     public void checkCanExecuteFunction(ConnectorSecurityContext context, FunctionKind functionKind, SchemaRoutineName function)
     {
         switch (functionKind) {
-            case SCALAR, AGGREGATE, WINDOW:
+            case SCALAR, AGGREGATE, WINDOW, TABLE:
                 return;
-            case TABLE:
-                denyExecuteFunction(function.toString());
         }
         throw new UnsupportedOperationException("Unsupported function kind: " + functionKind);
     }

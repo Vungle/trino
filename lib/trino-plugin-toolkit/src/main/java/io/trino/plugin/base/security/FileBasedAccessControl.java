@@ -64,7 +64,6 @@ import static io.trino.spi.security.AccessDeniedException.denyDropRole;
 import static io.trino.spi.security.AccessDeniedException.denyDropSchema;
 import static io.trino.spi.security.AccessDeniedException.denyDropTable;
 import static io.trino.spi.security.AccessDeniedException.denyDropView;
-import static io.trino.spi.security.AccessDeniedException.denyExecuteFunction;
 import static io.trino.spi.security.AccessDeniedException.denyGrantRoles;
 import static io.trino.spi.security.AccessDeniedException.denyGrantSchemaPrivilege;
 import static io.trino.spi.security.AccessDeniedException.denyGrantTablePrivilege;
@@ -605,10 +604,8 @@ public class FileBasedAccessControl
     public void checkCanExecuteFunction(ConnectorSecurityContext context, FunctionKind functionKind, SchemaRoutineName function)
     {
         switch (functionKind) {
-            case SCALAR, AGGREGATE, WINDOW:
+            case SCALAR, AGGREGATE, WINDOW, TABLE:
                 return;
-            case TABLE:
-                denyExecuteFunction(function.toString());
         }
         throw new UnsupportedOperationException("Unsupported function kind: " + functionKind);
     }
