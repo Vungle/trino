@@ -47,6 +47,7 @@ COPY --chown=trino:trino --from=builder /tmp/jvmkill/libjvmkill.so /usr/lib/trin
 RUN chmod +x /usr/lib/trino/bin/run-trino
 
 EXPOSE 8080 9000
+USER trino
 ENV LANG en_US.UTF-8
 CMD ["/usr/lib/trino/bin/run-trino"]
 HEALTHCHECK --interval=10s --timeout=5s --start-period=10s \
