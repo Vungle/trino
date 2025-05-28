@@ -517,6 +517,7 @@ jobs:
             - { modules: plugin/trino-bigquery, profile: cloud-tests-arrow }
             - { modules: plugin/trino-cassandra }
             - { modules: plugin/trino-clickhouse }
+            - { modules: plugin/trino-datasketches-hll }  # Add this line
             - { modules: plugin/trino-delta-lake }
             - { modules: plugin/trino-delta-lake, profile: cloud-tests }
             - { modules: plugin/trino-delta-lake, profile: gcs-tests }

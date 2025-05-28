@@ -300,4 +300,10 @@
             <unpack />
         </artifact>
     </artifactSet>
+
+    <artifactSet to="plugin/datasketches-hll">
+        <artifact id="${project.groupId}:trino-datasketches-hll:zip:${project.version}">
+            <unpack />
+        </artifact>
+    </artifactSet>
 </runtime>
