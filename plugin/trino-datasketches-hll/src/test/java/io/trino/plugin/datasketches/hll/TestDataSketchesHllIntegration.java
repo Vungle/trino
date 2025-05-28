@@ -106,4 +106,4 @@ public class TestDataSketchesHllIntegration
                 "SELECT hll_estimate(hll_union_agg(hll_add(hll_create(), 'test')))",
                 "SELECT 1.0");
     }
-} 
+}

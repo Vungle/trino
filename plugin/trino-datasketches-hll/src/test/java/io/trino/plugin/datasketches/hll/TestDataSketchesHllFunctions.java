@@ -33,7 +33,7 @@ public class TestDataSketchesHllFunctions
     public void testHllAddAndEstimate()
     {
         byte[] sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
-        
+
         // Add some values
         sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(sketch, "value1");
         sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(sketch, 123L);
@@ -57,7 +57,7 @@ public class TestDataSketchesHllFunctions
 
         // Union the sketches
         byte[] union = DataSketchesHllPlugin.DataSketchesHllFunctions.hllUnion(sketch1, sketch2);
-        
+
         double estimate = DataSketchesHllPlugin.DataSketchesHllFunctions.hllEstimate(union);
         assertTrue(estimate > 0);
         assertTrue(estimate <= 2.0); // Should be close to 2 unique values
@@ -93,7 +93,7 @@ public class TestDataSketchesHllFunctions
     public void testHllMemoryUsage()
     {
         byte[] sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
-        
+
         long serializationBytes = DataSketchesHllPlugin.DataSketchesHllFunctions.hllGetSerializationBytes(sketch);
         long compactBytes = DataSketchesHllPlugin.DataSketchesHllFunctions.hllGetCompactBytes(sketch);
         long updatableBytes = DataSketchesHllPlugin.DataSketchesHllFunctions.hllGetUpdatableBytes(sketch);
@@ -120,4 +120,4 @@ public class TestDataSketchesHllFunctions
         assertTrue(lowerBound <= estimate);
         assertTrue(stdError > 0);
     }
-} 
+}
