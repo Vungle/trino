@@ -135,6 +135,7 @@
         <module>plugin/trino-blackhole</module>
         <module>plugin/trino-cassandra</module>
         <module>plugin/trino-clickhouse</module>
+        <module>plugin/trino-datasketches-hll</module>
         <module>plugin/trino-delta-lake</module>
         <module>plugin/trino-druid</module>
         <module>plugin/trino-elasticsearch</module>
@@ -196,7 +197,6 @@
         <module>testing/trino-testing-resources</module>
         <module>testing/trino-testing-services</module>
         <module>testing/trino-tests</module>
-        <module>plugin/trino-datasketches-hll</module>
     </modules>
 
     <dependencyManagement>
