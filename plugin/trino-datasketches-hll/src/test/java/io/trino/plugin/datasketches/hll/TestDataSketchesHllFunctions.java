@@ -1,10 +1,20 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.trino.plugin.datasketches.hll;
 
-import io.trino.spi.function.ScalarFunction;
-import io.trino.spi.function.SqlType;
-import io.trino.spi.type.StandardTypes;
-import org.apache.datasketches.hll.HllSketch;
-import org.apache.datasketches.memory.Memory;
+import io.airlift.slice.Slice;
+import io.airlift.slice.Slices;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
@@ -16,7 +26,7 @@ public class TestDataSketchesHllFunctions
     @Test
     public void testHllCreate()
     {
-        byte[] sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
+        Slice sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
         assertTrue(DataSketchesHllPlugin.DataSketchesHllFunctions.hllValidate(sketch));
         assertEquals(DataSketchesHllPlugin.DataSketchesHllFunctions.hllGetLogK(sketch), 12L);
     }
@@ -24,7 +34,7 @@ public class TestDataSketchesHllFunctions
     @Test
     public void testHllCreateWithLogK()
     {
-        byte[] sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate(14);
+        Slice sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate(14);
         assertTrue(DataSketchesHllPlugin.DataSketchesHllFunctions.hllValidate(sketch));
         assertEquals(DataSketchesHllPlugin.DataSketchesHllFunctions.hllGetLogK(sketch), 14L);
     }
@@ -32,7 +42,7 @@ public class TestDataSketchesHllFunctions
     @Test
     public void testHllAddAndEstimate()
     {
-        byte[] sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
+        Slice sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
 
         // Add some values
         sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(sketch, "value1");
@@ -48,15 +58,15 @@ public class TestDataSketchesHllFunctions
     public void testHllUnion()
     {
         // Create two sketches
-        byte[] sketch1 = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
-        byte[] sketch2 = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
+        Slice sketch1 = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
+        Slice sketch2 = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
 
         // Add values to each sketch
         sketch1 = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(sketch1, "value1");
         sketch2 = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(sketch2, "value2");
 
         // Union the sketches
-        byte[] union = DataSketchesHllPlugin.DataSketchesHllFunctions.hllUnion(sketch1, sketch2);
+        Slice union = DataSketchesHllPlugin.DataSketchesHllFunctions.hllUnion(sketch1, sketch2);
 
         double estimate = DataSketchesHllPlugin.DataSketchesHllFunctions.hllEstimate(union);
         assertTrue(estimate > 0);
@@ -66,12 +76,12 @@ public class TestDataSketchesHllFunctions
     @Test
     public void testHllStringConversion()
     {
-        byte[] originalSketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
+        Slice originalSketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
         originalSketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(originalSketch, "test");
 
         // Convert to string and back
         String base64String = DataSketchesHllPlugin.DataSketchesHllFunctions.hllToString(originalSketch);
-        byte[] reconstructedSketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllFromString(base64String);
+        Slice reconstructedSketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllFromString(base64String);
 
         // Compare estimates
         double originalEstimate = DataSketchesHllPlugin.DataSketchesHllFunctions.hllEstimate(originalSketch);
@@ -82,17 +92,17 @@ public class TestDataSketchesHllFunctions
     @Test
     public void testHllValidation()
     {
-        byte[] validSketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
+        Slice validSketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
         assertTrue(DataSketchesHllPlugin.DataSketchesHllFunctions.hllValidate(validSketch));
 
-        byte[] invalidSketch = new byte[]{1, 2, 3};
+        Slice invalidSketch = Slices.wrappedBuffer(new byte[]{1, 2, 3});
         assertFalse(DataSketchesHllPlugin.DataSketchesHllFunctions.hllValidate(invalidSketch));
     }
 
     @Test
     public void testHllMemoryUsage()
     {
-        byte[] sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
+        Slice sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
 
         long serializationBytes = DataSketchesHllPlugin.DataSketchesHllFunctions.hllGetSerializationBytes(sketch);
         long compactBytes = DataSketchesHllPlugin.DataSketchesHllFunctions.hllGetCompactBytes(sketch);
@@ -108,7 +118,7 @@ public class TestDataSketchesHllFunctions
     @Test
     public void testHllErrorBounds()
     {
-        byte[] sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
+        Slice sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
         sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(sketch, "test");
 
         double estimate = DataSketchesHllPlugin.DataSketchesHllFunctions.hllEstimate(sketch);

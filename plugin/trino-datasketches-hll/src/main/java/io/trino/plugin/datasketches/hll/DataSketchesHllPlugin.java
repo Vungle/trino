@@ -1,5 +1,20 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.trino.plugin.datasketches.hll;
 
+import io.airlift.slice.Slice;
+import io.airlift.slice.Slices;
 import io.trino.spi.Plugin;
 import io.trino.spi.function.ScalarFunction;
 import io.trino.spi.function.SqlType;
@@ -7,12 +22,8 @@ import io.trino.spi.type.StandardTypes;
 import org.apache.datasketches.hll.HllSketch;
 import org.apache.datasketches.hll.TgtHllType;
 import org.apache.datasketches.memory.Memory;
-import org.apache.datasketches.hll.HllSketchFactory;
 
 import java.util.Set;
-
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static java.util.Arrays.stream;
 
 public class DataSketchesHllPlugin
         implements Plugin
@@ -20,118 +31,147 @@ public class DataSketchesHllPlugin
     @Override
     public Set<Class<?>> getFunctions()
     {
-        return stream(DataSketchesHllFunctions.class.getDeclaredClasses())
-                .filter(clazz -> clazz.isAnnotationPresent(ScalarFunction.class))
-                .collect(toImmutableSet());
+        return Set.of(DataSketchesHllFunctions.class);
     }
 
     public static class DataSketchesHllFunctions
     {
         private static final int DEFAULT_LOG_K = 12; // Default precision parameter
 
-        @ScalarFunction("hll_create")
+        @ScalarFunction(value = "hll_create", deterministic = true)
         @SqlType(StandardTypes.VARBINARY)
-        public static byte[] hllCreate()
+        public static Slice hllCreate()
         {
-            return hllCreate(DEFAULT_LOG_K);
+            HllSketch sketch = new HllSketch(DEFAULT_LOG_K, TgtHllType.HLL_4);
+            return Slices.wrappedBuffer(sketch.toCompactByteArray());
         }
 
-        @ScalarFunction("hll_create")
+        @ScalarFunction(value = "hll_create", deterministic = true)
         @SqlType(StandardTypes.VARBINARY)
-        public static byte[] hllCreate(@SqlType(StandardTypes.INTEGER) long logK)
+        public static Slice hllCreate(@SqlType(StandardTypes.INTEGER) long logK)
         {
             HllSketch sketch = new HllSketch((int) logK, TgtHllType.HLL_4);
-            return sketch.toCompactByteArray();
+            return Slices.wrappedBuffer(sketch.toCompactByteArray());
         }
 
         @ScalarFunction("hll_add")
         @SqlType(StandardTypes.VARBINARY)
-        public static byte[] hllAdd(@SqlType(StandardTypes.VARBINARY) byte[] sketch, @SqlType(StandardTypes.VARCHAR) String value)
+        public static Slice hllAdd(@SqlType(StandardTypes.VARBINARY) Slice sketch, @SqlType(StandardTypes.VARCHAR) String value)
         {
-            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch));
-            hllSketch.update(value);
-            return hllSketch.toCompactByteArray();
+            try {
+                // Add size validation
+                if (sketch.length() < 8) { // Minimum size for a valid HLL sketch
+                    throw new IllegalArgumentException("Invalid HLL sketch: too small");
+                }
+                HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
+                hllSketch.update(value);
+                return Slices.wrappedBuffer(hllSketch.toCompactByteArray());
+            }
+            catch (Exception e) {
+                throw new IllegalArgumentException("Invalid HLL sketch: " + e.getMessage());
+            }
         }
 
         @ScalarFunction("hll_add")
         @SqlType(StandardTypes.VARBINARY)
-        public static byte[] hllAdd(@SqlType(StandardTypes.VARBINARY) byte[] sketch, @SqlType(StandardTypes.BIGINT) long value)
+        public static Slice hllAdd(@SqlType(StandardTypes.VARBINARY) Slice sketch, @SqlType(StandardTypes.BIGINT) long value)
         {
-            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch));
-            hllSketch.update(value);
-            return hllSketch.toCompactByteArray();
+            try {
+                HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
+                hllSketch.update(value);
+                return Slices.wrappedBuffer(hllSketch.toCompactByteArray());
+            }
+            catch (Exception e) {
+                throw new IllegalArgumentException("Invalid HLL sketch: " + e.getMessage());
+            }
         }
 
         @ScalarFunction("hll_add")
         @SqlType(StandardTypes.VARBINARY)
-        public static byte[] hllAdd(@SqlType(StandardTypes.VARBINARY) byte[] sketch, @SqlType(StandardTypes.DOUBLE) double value)
+        public static Slice hllAdd(@SqlType(StandardTypes.VARBINARY) Slice sketch, @SqlType(StandardTypes.DOUBLE) double value)
         {
-            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch));
-            hllSketch.update(value);
-            return hllSketch.toCompactByteArray();
+            try {
+                HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
+                hllSketch.update(value);
+                return Slices.wrappedBuffer(hllSketch.toCompactByteArray());
+            }
+            catch (Exception e) {
+                throw new IllegalArgumentException("Invalid HLL sketch: " + e.getMessage());
+            }
         }
 
         @ScalarFunction("hll_estimate")
         @SqlType(StandardTypes.DOUBLE)
-        public static double hllEstimate(@SqlType(StandardTypes.VARBINARY) byte[] sketch)
+        public static double hllEstimate(@SqlType(StandardTypes.VARBINARY) Slice sketch)
         {
-            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch));
+            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
             return hllSketch.getEstimate();
         }
 
         @ScalarFunction("hll_union")
         @SqlType(StandardTypes.VARBINARY)
-        public static byte[] hllUnion(@SqlType(StandardTypes.VARBINARY) byte[] sketch1, @SqlType(StandardTypes.VARBINARY) byte[] sketch2)
+        public static Slice hllUnion(@SqlType(StandardTypes.VARBINARY) Slice sketch1, @SqlType(StandardTypes.VARBINARY) Slice sketch2)
         {
-            HllSketch union = HllSketch.heapify(Memory.wrap(sketch1));
-            union.union(HllSketch.heapify(Memory.wrap(sketch2)));
-            return union.toCompactByteArray();
+            HllSketch union = HllSketch.heapify(Memory.wrap(sketch1.getBytes()));
+            HllSketch other = HllSketch.heapify(Memory.wrap(sketch2.getBytes()));
+            union.update(other.toCompactByteArray());
+            return Slices.wrappedBuffer(union.toCompactByteArray());
         }
 
         @ScalarFunction("hll_union_agg")
         @SqlType(StandardTypes.VARBINARY)
-        public static byte[] hllUnionAgg(@SqlType(StandardTypes.VARBINARY) byte[] sketch)
+        public static Slice hllUnionAgg(@SqlType(StandardTypes.VARBINARY) Slice sketch)
         {
-            return sketch;
+            try {
+                HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
+                // Create a new sketch to hold the union
+                HllSketch union = new HllSketch(DEFAULT_LOG_K, TgtHllType.HLL_4);
+                // Update the union with the input sketch
+                union.update(hllSketch.toCompactByteArray());
+                return Slices.wrappedBuffer(union.toCompactByteArray());
+            }
+            catch (Exception e) {
+                throw new IllegalArgumentException("Invalid HLL sketch: " + e.getMessage());
+            }
         }
 
         @ScalarFunction("hll_std_error")
         @SqlType(StandardTypes.DOUBLE)
-        public static double hllStdError(@SqlType(StandardTypes.VARBINARY) byte[] sketch)
+        public static double hllStdError(@SqlType(StandardTypes.VARBINARY) Slice sketch)
         {
-            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch));
-            return hllSketch.getRelErr(true, true, false, false);
+            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
+            return hllSketch.getRelErr(true, true, 0, 0);
         }
 
         @ScalarFunction("hll_upper_bound")
         @SqlType(StandardTypes.DOUBLE)
-        public static double hllUpperBound(@SqlType(StandardTypes.VARBINARY) byte[] sketch, @SqlType(StandardTypes.DOUBLE) double numStdDev)
+        public static double hllUpperBound(@SqlType(StandardTypes.VARBINARY) Slice sketch, @SqlType(StandardTypes.DOUBLE) double numStdDev)
         {
-            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch));
-            return hllSketch.getUpperBound(numStdDev);
+            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
+            return hllSketch.getUpperBound((int) numStdDev);
         }
 
         @ScalarFunction("hll_lower_bound")
         @SqlType(StandardTypes.DOUBLE)
-        public static double hllLowerBound(@SqlType(StandardTypes.VARBINARY) byte[] sketch, @SqlType(StandardTypes.DOUBLE) double numStdDev)
+        public static double hllLowerBound(@SqlType(StandardTypes.VARBINARY) Slice sketch, @SqlType(StandardTypes.DOUBLE) double numStdDev)
         {
-            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch));
-            return hllSketch.getLowerBound(numStdDev);
+            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
+            return hllSketch.getLowerBound((int) numStdDev);
         }
 
         @ScalarFunction("hll_is_empty")
         @SqlType(StandardTypes.BOOLEAN)
-        public static boolean hllIsEmpty(@SqlType(StandardTypes.VARBINARY) byte[] sketch)
+        public static boolean hllIsEmpty(@SqlType(StandardTypes.VARBINARY) Slice sketch)
         {
-            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch));
+            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
             return hllSketch.isEmpty();
         }
 
         @ScalarFunction("hll_get_log_k")
         @SqlType(StandardTypes.INTEGER)
-        public static long hllGetLogK(@SqlType(StandardTypes.VARBINARY) byte[] sketch)
+        public static long hllGetLogK(@SqlType(StandardTypes.VARBINARY) Slice sketch)
         {
-            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch));
+            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
             return hllSketch.getLgConfigK();
         }
 
@@ -139,12 +179,12 @@ public class DataSketchesHllPlugin
 
         @ScalarFunction("hll_from_string")
         @SqlType(StandardTypes.VARBINARY)
-        public static byte[] hllFromString(@SqlType(StandardTypes.VARCHAR) String base64String)
+        public static Slice hllFromString(@SqlType(StandardTypes.VARCHAR) String base64String)
         {
             try {
                 byte[] bytes = java.util.Base64.getDecoder().decode(base64String);
                 HllSketch sketch = HllSketch.heapify(Memory.wrap(bytes));
-                return sketch.toCompactByteArray();
+                return Slices.wrappedBuffer(sketch.toCompactByteArray());
             }
             catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Invalid HLL sketch format: " + e.getMessage());
@@ -153,17 +193,21 @@ public class DataSketchesHllPlugin
 
         @ScalarFunction("hll_to_string")
         @SqlType(StandardTypes.VARCHAR)
-        public static String hllToString(@SqlType(StandardTypes.VARBINARY) byte[] sketch)
+        public static String hllToString(@SqlType(StandardTypes.VARBINARY) Slice sketch)
         {
-            return java.util.Base64.getEncoder().encodeToString(sketch);
+            return java.util.Base64.getEncoder().encodeToString(sketch.getBytes());
         }
 
         @ScalarFunction("hll_validate")
         @SqlType(StandardTypes.BOOLEAN)
-        public static boolean hllValidate(@SqlType(StandardTypes.VARBINARY) byte[] sketch)
+        public static boolean hllValidate(@SqlType(StandardTypes.VARBINARY) Slice sketch)
         {
             try {
-                HllSketch.heapify(Memory.wrap(sketch));
+                // Add size validation
+                if (sketch.length() < 8) { // Minimum size for a valid HLL sketch
+                    return false;
+                }
+                HllSketch.heapify(Memory.wrap(sketch.getBytes()));
                 return true;
             }
             catch (Exception e) {
@@ -173,33 +217,33 @@ public class DataSketchesHllPlugin
 
         @ScalarFunction("hll_get_serialization_bytes")
         @SqlType(StandardTypes.INTEGER)
-        public static long hllGetSerializationBytes(@SqlType(StandardTypes.VARBINARY) byte[] sketch)
+        public static long hllGetSerializationBytes(@SqlType(StandardTypes.VARBINARY) Slice sketch)
         {
-            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch));
-            return hllSketch.getSerializationBytes();
+            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
+            return hllSketch.getUpdatableSerializationBytes();
         }
 
         @ScalarFunction("hll_get_compact_bytes")
         @SqlType(StandardTypes.INTEGER)
-        public static long hllGetCompactBytes(@SqlType(StandardTypes.VARBINARY) byte[] sketch)
+        public static long hllGetCompactBytes(@SqlType(StandardTypes.VARBINARY) Slice sketch)
         {
-            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch));
+            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
             return hllSketch.getCompactSerializationBytes();
         }
 
         @ScalarFunction("hll_get_updatable_bytes")
         @SqlType(StandardTypes.INTEGER)
-        public static long hllGetUpdatableBytes(@SqlType(StandardTypes.VARBINARY) byte[] sketch)
+        public static long hllGetUpdatableBytes(@SqlType(StandardTypes.VARBINARY) Slice sketch)
         {
-            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch));
+            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
             return hllSketch.getUpdatableSerializationBytes();
         }
 
         @ScalarFunction("hll_get_serialization_version")
         @SqlType(StandardTypes.INTEGER)
-        public static long hllGetSerializationVersion(@SqlType(StandardTypes.VARBINARY) byte[] sketch)
+        public static long hllGetSerializationVersion(@SqlType(StandardTypes.VARBINARY) Slice sketch)
         {
-            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch));
+            HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
             return hllSketch.getSerializationVersion();
         }
     }
