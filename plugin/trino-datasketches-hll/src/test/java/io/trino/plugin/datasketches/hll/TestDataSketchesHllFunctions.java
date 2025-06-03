@@ -45,7 +45,7 @@ public class TestDataSketchesHllFunctions
         Slice sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
 
         // Add some values
-        sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(sketch, "value1");
+        sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(sketch, Slices.utf8Slice("value1"));
         sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(sketch, 123L);
         sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(sketch, 123.45);
 
@@ -62,8 +62,8 @@ public class TestDataSketchesHllFunctions
         Slice sketch2 = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
 
         // Add values to each sketch
-        sketch1 = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(sketch1, "value1");
-        sketch2 = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(sketch2, "value2");
+        sketch1 = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(sketch1, Slices.utf8Slice("value1"));
+        sketch2 = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(sketch2, Slices.utf8Slice("value2"));
 
         // Union the sketches
         Slice union = DataSketchesHllPlugin.DataSketchesHllFunctions.hllUnion(sketch1, sketch2);
@@ -77,11 +77,11 @@ public class TestDataSketchesHllFunctions
     public void testHllStringConversion()
     {
         Slice originalSketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
-        originalSketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(originalSketch, "test");
+        originalSketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(originalSketch, Slices.utf8Slice("test"));
 
         // Convert to string and back
-        String base64String = DataSketchesHllPlugin.DataSketchesHllFunctions.hllToString(originalSketch);
-        Slice reconstructedSketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllFromString(base64String);
+        Slice base64Slice = DataSketchesHllPlugin.DataSketchesHllFunctions.hllToString(originalSketch);
+        Slice reconstructedSketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllFromString(base64Slice);
 
         // Compare estimates
         double originalEstimate = DataSketchesHllPlugin.DataSketchesHllFunctions.hllEstimate(originalSketch);
@@ -119,7 +119,7 @@ public class TestDataSketchesHllFunctions
     public void testHllErrorBounds()
     {
         Slice sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllCreate();
-        sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(sketch, "test");
+        sketch = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(sketch, Slices.utf8Slice("test"));
 
         double estimate = DataSketchesHllPlugin.DataSketchesHllFunctions.hllEstimate(sketch);
         double stdError = DataSketchesHllPlugin.DataSketchesHllFunctions.hllStdError(sketch);

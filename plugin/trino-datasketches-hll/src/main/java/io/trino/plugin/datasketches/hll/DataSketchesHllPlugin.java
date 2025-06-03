@@ -56,11 +56,35 @@ public class DataSketchesHllPlugin
 
         @ScalarFunction("hll_add")
         @SqlType(StandardTypes.VARBINARY)
-        public static Slice hllAdd(@SqlType(StandardTypes.VARBINARY) Slice sketch, @SqlType(StandardTypes.VARCHAR) String value)
+        public static Slice hllAdd(@SqlType(StandardTypes.VARBINARY) Slice sketch, @SqlType(StandardTypes.VARCHAR) Slice value)
         {
+            if (sketch == null) {
+                return hllCreate();
+            }
             try {
-                // Add size validation
-                if (sketch.length() < 8) { // Minimum size for a valid HLL sketch
+                if (sketch.length() < 8) {
+                    throw new IllegalArgumentException("Invalid HLL sketch: too small");
+                }
+                HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
+                if (value != null) {
+                    hllSketch.update(value.toStringUtf8());
+                }
+                return Slices.wrappedBuffer(hllSketch.toCompactByteArray());
+            }
+            catch (Exception e) {
+                throw new IllegalArgumentException("Invalid HLL sketch: " + e.getMessage());
+            }
+        }
+
+        @ScalarFunction("hll_add")
+        @SqlType(StandardTypes.VARBINARY)
+        public static Slice hllAdd(@SqlType(StandardTypes.VARBINARY) Slice sketch, @SqlType(StandardTypes.BIGINT) long value)
+        {
+            if (sketch == null) {
+                return hllCreate();
+            }
+            try {
+                if (sketch.length() < 8) {
                     throw new IllegalArgumentException("Invalid HLL sketch: too small");
                 }
                 HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
@@ -74,23 +98,15 @@ public class DataSketchesHllPlugin
 
         @ScalarFunction("hll_add")
         @SqlType(StandardTypes.VARBINARY)
-        public static Slice hllAdd(@SqlType(StandardTypes.VARBINARY) Slice sketch, @SqlType(StandardTypes.BIGINT) long value)
-        {
-            try {
-                HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
-                hllSketch.update(value);
-                return Slices.wrappedBuffer(hllSketch.toCompactByteArray());
-            }
-            catch (Exception e) {
-                throw new IllegalArgumentException("Invalid HLL sketch: " + e.getMessage());
-            }
-        }
-
-        @ScalarFunction("hll_add")
-        @SqlType(StandardTypes.VARBINARY)
         public static Slice hllAdd(@SqlType(StandardTypes.VARBINARY) Slice sketch, @SqlType(StandardTypes.DOUBLE) double value)
         {
+            if (sketch == null) {
+                return hllCreate();
+            }
             try {
+                if (sketch.length() < 8) {
+                    throw new IllegalArgumentException("Invalid HLL sketch: too small");
+                }
                 HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
                 hllSketch.update(value);
                 return Slices.wrappedBuffer(hllSketch.toCompactByteArray());
@@ -123,6 +139,9 @@ public class DataSketchesHllPlugin
         public static Slice hllUnionAgg(@SqlType(StandardTypes.VARBINARY) Slice sketch)
         {
             try {
+                if (sketch.length() < 8) {
+                    throw new IllegalArgumentException("Invalid HLL sketch: too small");
+                }
                 HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
                 // Create a new sketch to hold the union
                 HllSketch union = new HllSketch(DEFAULT_LOG_K, TgtHllType.HLL_4);
@@ -179,9 +198,10 @@ public class DataSketchesHllPlugin
 
         @ScalarFunction("hll_from_string")
         @SqlType(StandardTypes.VARBINARY)
-        public static Slice hllFromString(@SqlType(StandardTypes.VARCHAR) String base64String)
+        public static Slice hllFromString(@SqlType(StandardTypes.VARCHAR) Slice base64Slice)
         {
             try {
+                String base64String = base64Slice.toStringUtf8();
                 byte[] bytes = java.util.Base64.getDecoder().decode(base64String);
                 HllSketch sketch = HllSketch.heapify(Memory.wrap(bytes));
                 return Slices.wrappedBuffer(sketch.toCompactByteArray());
@@ -193,9 +213,10 @@ public class DataSketchesHllPlugin
 
         @ScalarFunction("hll_to_string")
         @SqlType(StandardTypes.VARCHAR)
-        public static String hllToString(@SqlType(StandardTypes.VARBINARY) Slice sketch)
+        public static Slice hllToString(@SqlType(StandardTypes.VARBINARY) Slice sketch)
         {
-            return java.util.Base64.getEncoder().encodeToString(sketch.getBytes());
+            String base64String = java.util.Base64.getEncoder().encodeToString(sketch.getBytes());
+            return Slices.utf8Slice(base64String);
         }
 
         @ScalarFunction("hll_validate")
@@ -203,8 +224,7 @@ public class DataSketchesHllPlugin
         public static boolean hllValidate(@SqlType(StandardTypes.VARBINARY) Slice sketch)
         {
             try {
-                // Add size validation
-                if (sketch.length() < 8) { // Minimum size for a valid HLL sketch
+                if (sketch.length() < 8) {
                     return false;
                 }
                 HllSketch.heapify(Memory.wrap(sketch.getBytes()));
