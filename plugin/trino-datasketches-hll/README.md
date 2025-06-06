@@ -16,6 +16,14 @@ trino/plugin/trino-datasketches-hll
    ../../mvnw clean package -DskipTests
    ```
    
+   Saved jars on S3:
+   ```bash
+      aws s3 cp target/trino-datasketches-hll-408-SNAPSHOT.jar s3://vungle2-dataeng/trino-plugin/datasketches-hll/
+      aws s3 cp target/trino-datasketches-hll-408-SNAPSHOT-services.jar s3://vungle2-dataeng/trino-plugin/datasketches-hll/
+      aws s3 cp --recursive target/trino-datasketches-hll-408-SNAPSHOT/* s3://vungle2-dataeng/trino-plugin/datasketches-hll/
+   ```
+   [trino-datasketches-hll](s3://vungle2-dataeng/trino-plugin/datasketches-hll/)
+   
 2. Build the image corresponding to the version mounted from trinodb/trino (e.g. ```FROM trinodb/trino:463```):
    ```bash
    docker build -t trino-datasketches-hll .
@@ -49,6 +57,8 @@ trino/plugin/trino-datasketches-hll
     docker tag trino-datasketches-hll:latest vungle/trino:463-datasketches-hll
     docker push vungle/trino:463-datasketches-hll
     ```
+   
+    Check [docker hub](https://hub.docker.com/repository/docker/vungle/trino/tags/)
 
 6. Test on staging env values.yaml:
     ```yaml
