@@ -59,7 +59,7 @@ public class DataSketchesHllPlugin
         public static Slice hllAdd(@SqlType(StandardTypes.VARBINARY) Slice sketch, @SqlType(StandardTypes.VARCHAR) Slice value)
         {
             if (sketch == null) {
-                return hllCreate();
+                return hllAdd(hllCreate(), value);
             }
             try {
                 if (sketch.length() < 8) {
