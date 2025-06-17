@@ -426,6 +426,7 @@ jobs:
             !:trino-bigquery,
             !:trino-cassandra,
             !:trino-clickhouse,
+            !:trino-datasketches-hll,
             !:trino-delta-lake,
             !:trino-docs,!:trino-server,!:trino-server-rpm,
             !:trino-druid,
@@ -517,6 +518,7 @@ jobs:
             - { modules: plugin/trino-bigquery, profile: cloud-tests-arrow }
             - { modules: plugin/trino-cassandra }
             - { modules: plugin/trino-clickhouse }
+            - { modules: plugin/trino-datasketches-hll }
             - { modules: plugin/trino-delta-lake }
             - { modules: plugin/trino-delta-lake, profile: cloud-tests }
             - { modules: plugin/trino-delta-lake, profile: gcs-tests }
