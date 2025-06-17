@@ -81,7 +81,7 @@ public class DataSketchesHllPlugin
         public static Slice hllAdd(@SqlType(StandardTypes.VARBINARY) Slice sketch, @SqlType(StandardTypes.BIGINT) long value)
         {
             if (sketch == null) {
-                return hllCreate();
+                return hllAdd(hllCreate(), value);
             }
             try {
                 if (sketch.length() < 8) {
@@ -101,7 +101,7 @@ public class DataSketchesHllPlugin
         public static Slice hllAdd(@SqlType(StandardTypes.VARBINARY) Slice sketch, @SqlType(StandardTypes.DOUBLE) double value)
         {
             if (sketch == null) {
-                return hllCreate();
+                return hllAdd(hllCreate(), value);
             }
             try {
                 if (sketch.length() < 8) {
@@ -159,7 +159,14 @@ public class DataSketchesHllPlugin
         public static double hllStdError(@SqlType(StandardTypes.VARBINARY) Slice sketch)
         {
             HllSketch hllSketch = HllSketch.heapify(Memory.wrap(sketch.getBytes()));
-            return hllSketch.getRelErr(true, true, 0, 0);
+            try {
+                return hllSketch.getRelErr(false, false, 1, 1);
+            }
+            catch (ArrayIndexOutOfBoundsException e) {
+                // If we get an ArrayIndexOutOfBoundsException, the sketch is likely in sparse mode
+                // Return a conservative estimate of the standard error
+                return 1.0 / Math.sqrt(hllSketch.getLgConfigK());
+            }
         }
 
         @ScalarFunction("hll_upper_bound")

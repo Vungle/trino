@@ -51,7 +51,7 @@ public class TestDataSketchesHllFunctions
 
         double estimate = DataSketchesHllPlugin.DataSketchesHllFunctions.hllEstimate(sketch);
         assertTrue(estimate > 0);
-        assertTrue(estimate <= 3.0); // Should be close to 3 unique values
+        assertTrue(Math.abs(estimate - 3.0) <= 0.1); // Should be within 0.1 of 3.0
     }
 
     @Test
@@ -70,7 +70,7 @@ public class TestDataSketchesHllFunctions
 
         double estimate = DataSketchesHllPlugin.DataSketchesHllFunctions.hllEstimate(union);
         assertTrue(estimate > 0);
-        assertTrue(estimate <= 2.0); // Should be close to 2 unique values
+        assertTrue(Math.abs(estimate - 2.0) <= 0.1); // Should be within 0.1 of 2.0
     }
 
     @Test
@@ -129,5 +129,24 @@ public class TestDataSketchesHllFunctions
         assertTrue(upperBound >= estimate);
         assertTrue(lowerBound <= estimate);
         assertTrue(stdError > 0);
+    }
+
+    @Test
+    public void testHllAddWithNullSketch()
+    {
+        // Test with VARCHAR value
+        Slice result1 = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(null, Slices.utf8Slice("test"));
+        double estimate1 = DataSketchesHllPlugin.DataSketchesHllFunctions.hllEstimate(result1);
+        assertTrue(Math.abs(estimate1 - 1.0) <= 0.1); // Should be within 0.1 of 1.0
+
+        // Test with BIGINT value
+        Slice result2 = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(null, 123L);
+        double estimate2 = DataSketchesHllPlugin.DataSketchesHllFunctions.hllEstimate(result2);
+        assertTrue(Math.abs(estimate2 - 1.0) <= 0.1); // Should be within 0.1 of 1.0
+
+        // Test with DOUBLE value
+        Slice result3 = DataSketchesHllPlugin.DataSketchesHllFunctions.hllAdd(null, 123.45);
+        double estimate3 = DataSketchesHllPlugin.DataSketchesHllFunctions.hllEstimate(result3);
+        assertTrue(Math.abs(estimate3 - 1.0) <= 0.1); // Should be within 0.1 of 1.0
     }
 }
